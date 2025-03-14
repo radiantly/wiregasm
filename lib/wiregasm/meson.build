@@ -40,12 +40,12 @@ include_directories = include_directories(
 link_args = [
   '-lembind',
 
-  # include support for WORKERFS
-  '-lworkerfs.js',
+  # Only going to be run on a web worker
+  '-s', 'ENVIRONMENT=worker',
 
   '-s', 'MODULARIZE=1',
   '-s', 'EXPORT_NAME="loadWiregasm"',
-  '-s', 'TOTAL_MEMORY=128MB',
+  '-s', 'INITIAL_MEMORY=128MB',
 
   # XXX: drastically increases binary size, maybe selectively asyncify functions?
   # '-s', 'ASYNCIFY=1',
