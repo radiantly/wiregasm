@@ -9,7 +9,7 @@ on:
       - master
 
 env:
-  EM_VERSION: 4.0.5
+  EMSDK_VERSION: 4.0.5
 
 jobs:
   build:
@@ -18,12 +18,12 @@ jobs:
       !contains(github.event.head_commit.message, 'skip-ci')
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Setup emsdk
       uses: mymindstorm/setup-emsdk@v14
       with:
-        version: ${{ env.EM_VERSION }}
+        version: ${{ env.EMSDK_VERSION }}
         # actions-cache-folder: 'emsdk-cache'
 
     - name: Verify EMSDK
@@ -42,9 +42,10 @@ jobs:
           automake \
           autopoint \
           libtool \
-          libltdl-dev
+          libltdl-dev \
+          asciidoctor
 
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       with:
         path: |
           built/*
@@ -55,7 +56,11 @@ jobs:
           !lib/wiregasm
           !lib/crossfile.meson
           !lib/Makefile
-        key: lib-${{ hashFiles('patches/**', 'lib/Makefile', 'lib/crossfile.meson') }}-${{ env.EM_VERSION }}
+        key: lib-${{ hashFiles('patches/**', 'lib/Makefile', 'lib/crossfile.meson') }}-${{ env.EMSDK_VERSION }}
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
     - name: Build WASM lib
       run: npm run build:emscripten-local
