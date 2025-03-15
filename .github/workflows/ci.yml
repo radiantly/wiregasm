@@ -7,6 +7,13 @@ on:
   pull_request:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled'
+        required: false
+        default: false
 
 env:
   EMSDK_VERSION: 4.0.5
@@ -43,7 +50,8 @@ jobs:
           autopoint \
           libtool \
           libltdl-dev \
-          asciidoctor
+          asciidoctor \
+          xsltproc
 
     - uses: actions/cache@v4
       with:
