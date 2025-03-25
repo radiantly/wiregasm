@@ -42,7 +42,7 @@ link_args = [
 
   '-s', 'MODULARIZE=1',
   '-s', 'EXPORT_NAME="loadWiregasm"',
-  '-s', 'TOTAL_MEMORY=128MB',
+  '-s', 'INITIAL_MEMORY=128MB',
 
   # XXX: drastically increases binary size, maybe selectively asyncify functions?
   # '-s', 'ASYNCIFY=1',

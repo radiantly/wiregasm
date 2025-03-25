@@ -253,9 +253,9 @@ glib: glib-$(GLIB_MINOR_VERSION).tar.xz .sum-glib
 	+$(MESON_BUILD)
 	touch $@
 
-NGHTTP2_VERSION := 1.61.0
+NGHTTP2_VERSION := 1.65.0
 NGHTTP2_URL := https://github.com/nghttp2/nghttp2/releases/download/v$(NGHTTP2_VERSION)/nghttp2-$(NGHTTP2_VERSION).tar.xz
-NGHTTP2_CHECKSUM := 01e930d7caf464699505f92b76e2bc8192d168612dc564d2546812c42afea2fb81d552d70e8a5fed35e2bf5deadbec8eda095af94a2484bca41542988afce52a
+NGHTTP2_CHECKSUM := e1ef685a425017474ea0412c8ad13a217a45a320322b3aee48e646be21457d9b1f374abb9f681f47595a0ad8feb07d076bd0aa3279d35c5c9b5b8c921d8dd39e
 NGHTTP2_CONF := \
 	--enable-lib-only
 
