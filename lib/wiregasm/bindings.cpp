@@ -45,6 +45,7 @@ EMSCRIPTEN_BINDINGS(ProtoTree)
       .field("severity", &ProtoTree::severity)
       .field("type", &ProtoTree::type)
       .field("fnum", &ProtoTree::fnum)
+      .field("field_info_ptr", &ProtoTree::field_info_ptr)
       .field("url", &ProtoTree::url);
 }
 

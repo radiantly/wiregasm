@@ -20,6 +20,7 @@ struct ProtoTree
   int start;
   int length;
   int data_source_idx;
+  unsigned int field_info_ptr;
   vector<ProtoTree> tree;
 };
 

@@ -431,6 +431,7 @@ wg_session_process_frame_cb_tree(epan_dissect_t *edt, proto_tree *tree, tvbuff_t
       continue;
 
     ProtoTree t;
+    t.field_info_ptr = (unsigned)finfo;
 
     if (!finfo->rep)
     {
