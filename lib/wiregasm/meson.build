@@ -94,16 +94,3 @@ custom_target(
   install: true,
   install_dir: get_option('bindir')
 )
-
-# create gzipped versions of .data and .wasm
-gzip = find_program('gzip', required: true)
-
-foreach tgt: [ 'wiregasm.wasm', 'wiregasm.data' ]
-  custom_target('gz-' + tgt,
-    command: [ gzip, '--keep', '--force', tgt ],
-    input: out,
-    output: tgt + '.gz',
-    install: true,
-    install_dir: get_option('bindir'),
-  )
-endforeach
