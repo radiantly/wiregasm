@@ -30,6 +30,7 @@ EMSCRIPTEN_BINDINGS(DissectSession)
       .function("load", &DissectSession::load)
       .function("getFrames", &DissectSession::getFrames)
       .function("getFrame", &DissectSession::getFrame)
+      .function("findFrame", &DissectSession::findFrame)
       .function("follow", &DissectSession::follow);
 }
 
@@ -195,8 +196,33 @@ EMSCRIPTEN_BINDINGS(CompleteField)
       .field("name", &CompleteField::name);
 }
 
+EMSCRIPTEN_BINDINGS(Find) {
+  
+  value_object<FindProps>("FindProps")
+
+    .field("target", &FindProps::target)
+    .field("input_type", &FindProps::input_type)
+    .field("search_term", &FindProps::search_term)
+
+    .field("case_sensitive", &FindProps::case_sensitive)
+    .field("backwards", &FindProps::backwards)
+    .field("multiple_occurrences", &FindProps::multiple_occurrences)
+
+    .field("frame_number", &FindProps::frame_number)
+    .field("filter", &FindProps::filter)
+    .field("field_info_ptr", &FindProps::field_info_ptr)
+    .field("search_pos", &FindProps::search_pos)
+    .field("search_len", &FindProps::search_len);
+}
+
 EMSCRIPTEN_BINDINGS(stl_wrappers)
 {
+  register_optional<int>();
+  register_optional<bool>();
+  register_optional<string>();
+  register_optional<unsigned>();
+  register_optional<FindProps>();
+
   register_vector<string>("VectorString");
   register_vector<FrameMeta>("VectorFrameMeta");
   register_vector<DataSource>("VectorDataSource");

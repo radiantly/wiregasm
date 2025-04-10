@@ -1,4 +1,9 @@
 #include "lib.h"
+
+extern "C" {
+  #include "lib_file.h"
+}
+
 #include "wiregasm.h"
 
 static guint32 cum_bytes;
@@ -1143,4 +1148,131 @@ wg_session_process_complete(const char *tok_field)
         }
     }
     return res;
+}
+
+class Defer {
+public:
+    Defer() {}
+    Defer(const Defer&) = delete;
+    Defer& operator=(const Defer&) = delete;
+
+    void defer(std::function<void()> func) {
+        f = std::move(func);
+    }
+
+    ~Defer() {
+        if (f) f();
+    }
+
+private:
+    std::function<void()> f;
+};
+
+optional<FindProps> wg_find_frame(capture_file &cfile, GHashTable *&filter_table, FindProps &props) {
+    // nothing to find
+    if (props.search_term.empty()) return {};
+
+    int frame_number = props.frame_number.value_or(0);
+    bool multiple_occurrences = props.multiple_occurrences.value_or(true);
+
+    // out of bounds
+    if (frame_number < 0 or frame_number > cfile.count) return {};
+    
+    cfile.regex = nullptr;
+    cfile.current_frame = frame_number ? frame_data_sequence_find(cfile.provider.frames, frame_number) : nullptr;
+    cfile.case_type = props.case_sensitive.value_or(false);
+    cfile.dir = props.backwards.value_or(false) ? SD_BACKWARD : SD_FORWARD;
+    cfile.search_pos = props.search_pos.value_or(0);
+    cfile.search_len = props.search_len.value_or(0);
+    cfile.finfo_selected = nullptr;
+
+    // Packets filtered under the existing view
+    string dfilter = props.filter.value_or("");
+    const struct wg_filter_item *filter_item;
+    filter_item = session_filter_data(filter_table, &cfile, dfilter.c_str());
+
+    // invalid filter passed
+    if (filter_item == nullptr) return {};
+
+    wg_set_globals_for_find(&cfile, filter_item->filtered);
+
+    if (props.input_type == "display_filter") {
+        dfilter_t *sfcode;
+        df_error_t *sferr = nullptr;
+        if (!dfilter_compile(props.search_term.c_str(), &sfcode, &sferr) || sfcode == nullptr) {
+            on_status(WARN, sferr->msg);
+            g_free(sferr);
+            return {};
+        }
+
+        if(!cf_find_packet_dfilter(&cfile, sfcode, cfile.dir))
+            return {};
+        
+        props.frame_number = cfile.current_frame->num;
+        return props;
+    }
+
+    if (props.input_type == "hex_value") {
+        uint8_t *bytes = nullptr;
+        size_t nbytes = 0;
+
+        bytes = convert_string_to_hex(props.search_term.c_str(), &nbytes);
+
+        if(!cf_find_packet_data(&cfile, bytes, nbytes, cfile.dir, multiple_occurrences)) return {};
+
+        props.frame_number = cfile.current_frame->num;
+        props.search_pos = cfile.search_pos;
+        props.search_len = cfile.search_len;
+        return props;
+    }
+    
+    Defer regex_cleanup; 
+    if (props.input_type == "regex") {
+        char *errmsg;
+        cfile.regex = ws_regex_compile(props.search_term.c_str(), &errmsg);
+        if (cfile.regex == nullptr) {
+            on_status(WARN, errmsg);
+            return {};
+        }
+
+        regex_cleanup.defer([&]() { 
+            ws_regex_free(cfile.regex);
+            cfile.regex = nullptr;
+        });
+    }
+
+    if (props.target == "list") {
+
+        if(!cf_find_packet_summary_line(&cfile, props.search_term.c_str(), cfile.dir))
+            return {};
+        
+        props.frame_number = cfile.current_frame->num;
+        return props;
+    }
+
+    if (props.target == "bytes") {
+        if(!cf_find_packet_data(&cfile, reinterpret_cast<const uint8_t*>(props.search_term.c_str()), props.search_term.length() + 1, cfile.dir, multiple_occurrences))
+            return {};
+
+        props.frame_number = cfile.current_frame->num;
+        props.search_pos = cfile.search_pos;
+        props.search_len = cfile.search_len;
+        return props;
+    }
+
+    if (props.target == "details") {
+        
+        if(!cf_find_packet_protocol_tree(&cfile, props.search_term.c_str(), cfile.dir, multiple_occurrences))
+            return {};
+
+        props.frame_number = cfile.current_frame->num;
+        props.search_pos = cfile.search_pos;
+        props.search_len = cfile.search_len;
+        props.field_info_ptr = reinterpret_cast<unsigned>(cfile.finfo_selected);
+        return props;
+    }
+
+    on_status(WARN, "Invalid parameters passed to find");
+
+    return {};
 }

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 #include <glib.h>
 #include <wireshark/cfile.h>
 
@@ -155,6 +156,26 @@ struct FilterCompletionResponse
   vector<CompleteField> fields;
 };
 
+struct FindProps
+{
+  // required parameters
+  string input_type;
+  string search_term;
+  
+  // additional options
+  optional<string> target;
+  optional<bool> case_sensitive;
+  optional<bool> backwards = false;
+  optional<bool> multiple_occurrences = false;
+
+  // current 
+  optional<int> frame_number = 0;
+  optional<string> filter;
+  optional<unsigned> field_info_ptr = 0;
+  optional<int> search_pos = 0;
+  optional<int> search_len = 0;
+};
+
 // globals
 
 bool wg_init();
@@ -185,6 +206,7 @@ public:
   LoadResponse load();
   FramesResponse getFrames(string filter, int skip, int limit);
   Frame getFrame(int number);
+  optional<FindProps> findFrame(FindProps props);
   Follow follow(string follow, string filter);
   ~DissectSession();
 };

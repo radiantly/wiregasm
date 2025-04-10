@@ -565,3 +565,8 @@ FilterCompletionResponse wg_complete_filter(string field)
   res.fields = wg_session_process_complete(field.c_str());
   return res;
 }
+
+optional<FindProps> DissectSession::findFrame(FindProps props)
+{
+  return wg_find_frame(this->capture_file, this->filter_table, props);
+}

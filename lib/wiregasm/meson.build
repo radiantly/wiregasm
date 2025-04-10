@@ -1,4 +1,4 @@
-project('wiregasm', 'cpp')
+project('wiregasm', ['c', 'cpp'])
 
 contrib_path = get_option('prefix')
 contrib_lib_dir = join_paths(contrib_path, 'lib')
@@ -71,6 +71,7 @@ link_args = [
 
 sources = files([
   'wiregasm.cpp',
+  'lib_file.c',
   'lib.cpp',
   'bindings.cpp'
 ])
