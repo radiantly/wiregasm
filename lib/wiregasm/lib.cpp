@@ -1180,11 +1180,34 @@ optional<FindProps> wg_find_frame(capture_file &cfile, GHashTable *&filter_table
     
     cfile.regex = nullptr;
     cfile.current_frame = frame_number ? frame_data_sequence_find(cfile.provider.frames, frame_number) : nullptr;
-    cfile.case_type = props.case_sensitive.value_or(false);
+    cfile.case_type = props.case_insensitive.value_or(true);
     cfile.dir = props.backwards.value_or(false) ? SD_BACKWARD : SD_FORWARD;
+    cfile.scs_type = props.charset == "utf-8" ? SCS_NARROW : props.charset == "utf-16" ? SCS_WIDE : SCS_NARROW_AND_WIDE;
     cfile.search_pos = props.search_pos.value_or(0);
     cfile.search_len = props.search_len.value_or(0);
-    cfile.finfo_selected = nullptr;
+    cfile.finfo_selected = reinterpret_cast<field_info*>(props.field_info_ptr.value_or(0));
+
+    epan_dissect_t edt;
+    Defer bufrec_cleanup;
+    if (cfile.current_frame) {
+      wtap_rec_init(&cfile.rec);
+      ws_buffer_init(&cfile.buf, 1514);
+
+      if(!cf_read_record(&cfile, cfile.current_frame, &cfile.rec, &cfile.buf))
+        return {};
+
+      epan_dissect_init(&edt, cfile.epan, true, true);
+      epan_dissect_run(&edt, cfile.cd_t, &cfile.rec, frame_tvbuff_new_buffer(&cfile.provider, cfile.current_frame, &cfile.buf), cfile.current_frame, NULL);
+      cfile.edt = &edt;
+
+      bufrec_cleanup.defer([&]() {
+        cfile.edt = nullptr;
+        epan_dissect_cleanup(&edt);
+        
+        wtap_rec_cleanup(&cfile.rec);
+        ws_buffer_free(&cfile.buf);
+      });
+    }
 
     // Packets filtered under the existing view
     string dfilter = props.filter.value_or("");
@@ -1232,6 +1255,7 @@ optional<FindProps> wg_find_frame(capture_file &cfile, GHashTable *&filter_table
         cfile.regex = ws_regex_compile(props.search_term.c_str(), &errmsg);
         if (cfile.regex == nullptr) {
             on_status(WARN, errmsg);
+            g_free(errmsg);
             return {};
         }
 
@@ -1241,9 +1265,14 @@ optional<FindProps> wg_find_frame(capture_file &cfile, GHashTable *&filter_table
         });
     }
 
-    if (props.target == "list") {
+    Defer string_cleanup;
+    char *search_string = convert_string_case(props.search_term.c_str(), cfile.case_type);
+    string_cleanup.defer([&]() {
+      g_free(search_string);
+    });
 
-        if(!cf_find_packet_summary_line(&cfile, props.search_term.c_str(), cfile.dir))
+    if (props.target == "list") {
+        if(!cf_find_packet_summary_line(&cfile, search_string, cfile.dir))
             return {};
         
         props.frame_number = cfile.current_frame->num;
@@ -1251,7 +1280,7 @@ optional<FindProps> wg_find_frame(capture_file &cfile, GHashTable *&filter_table
     }
 
     if (props.target == "bytes") {
-        if(!cf_find_packet_data(&cfile, reinterpret_cast<const uint8_t*>(props.search_term.c_str()), props.search_term.length() + 1, cfile.dir, multiple_occurrences))
+        if(!cf_find_packet_data(&cfile, reinterpret_cast<const uint8_t*>(search_string), props.search_term.length() + 1, cfile.dir, multiple_occurrences))
             return {};
 
         props.frame_number = cfile.current_frame->num;
@@ -1261,8 +1290,7 @@ optional<FindProps> wg_find_frame(capture_file &cfile, GHashTable *&filter_table
     }
 
     if (props.target == "details") {
-        
-        if(!cf_find_packet_protocol_tree(&cfile, props.search_term.c_str(), cfile.dir, multiple_occurrences))
+        if(!cf_find_packet_protocol_tree(&cfile, search_string, cfile.dir, multiple_occurrences))
             return {};
 
         props.frame_number = cfile.current_frame->num;

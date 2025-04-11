@@ -164,7 +164,8 @@ struct FindProps
   
   // additional options
   optional<string> target;
-  optional<bool> case_sensitive;
+  optional<string> charset;
+  optional<bool> case_insensitive;
   optional<bool> backwards = false;
   optional<bool> multiple_occurrences = false;
 

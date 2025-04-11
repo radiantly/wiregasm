@@ -200,11 +200,12 @@ EMSCRIPTEN_BINDINGS(Find) {
   
   value_object<FindProps>("FindProps")
 
-    .field("target", &FindProps::target)
     .field("input_type", &FindProps::input_type)
     .field("search_term", &FindProps::search_term)
-
-    .field("case_sensitive", &FindProps::case_sensitive)
+    
+    .field("target", &FindProps::target)
+    .field("charset", &FindProps::charset)
+    .field("case_insensitive", &FindProps::case_insensitive)
     .field("backwards", &FindProps::backwards)
     .field("multiple_occurrences", &FindProps::multiple_occurrences)
 
