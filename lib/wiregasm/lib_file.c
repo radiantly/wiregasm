@@ -1415,9 +1415,11 @@ match_dfilter(capture_file *cf, frame_data *fdata,
 
 // this handles the state
 static capture_file *active_capture_file;
+static const uint8_t *filter_data;
 
 void wg_set_globals_for_find(capture_file *cf, uint8_t *const filtered_frames) {
     active_capture_file = cf;
+    filter_data = filtered_frames;
 }
 
 // ui functions stubbed
@@ -1474,7 +1476,7 @@ find_packet(capture_file *cf, ws_match_function match_function,
         fdata = frame_data_sequence_find(cf->provider.frames, framenum);
 
         /* Is this packet in the display? */
-        if (fdata && fdata->passed_dfilter) {
+        if (fdata && (!filter_data || (filter_data[framenum / 8] & (1 << (framenum % 8))))) {
             /* Yes.  Does it match the search criterion? */
             result = (*match_function)(cf, fdata, &rec, &buf, criterion);
             if (result == MR_ERROR) {
